@@ -4,6 +4,15 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import * as https from 'https';
 
+const DOWNLOAD_TIMEOUT_MS = 20000;
+const MAX_REDIRECTS = 5;
+const ALLOWED_DOWNLOAD_HOSTS = ['gitlab.com', 'www.gitlab.com'];
+
+function getCacheDir(): string {
+    const homeDir = require('os').homedir();
+    return path.join(homeDir, '.cache', 'mcp-kali-workspace');
+}
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('MCP Kali Workspace extension activated');
 
@@ -23,7 +32,11 @@ export function activate(context: vscode.ExtensionContext) {
         await removeWorkspace();
     });
 
-    context.subscriptions.push(setupCommand, removeCommand);
+    let clearCacheCommand = vscode.commands.registerCommand('mcp-kali.clearCache', async () => {
+        await clearCacheDirectory();
+    });
+
+    context.subscriptions.push(setupCommand, removeCommand, clearCacheCommand);
 }
 
 async function downloadResources(context: vscode.ExtensionContext): Promise<void> {
@@ -49,42 +62,120 @@ async function downloadResources(context: vscode.ExtensionContext): Promise<void
     }
 }
 
-function downloadFile(url: string, destPath: string): Promise<void> {
+function isAllowedHost(hostname: string): boolean {
+    return ALLOWED_DOWNLOAD_HOSTS.includes(hostname.toLowerCase());
+}
+
+function downloadFile(url: string, destPath: string, redirectCount = 0): Promise<void> {
     return new Promise((resolve, reject) => {
-        https.get(url, (response) => {
+        let parsedUrl: URL;
+        try {
+            parsedUrl = new URL(url);
+        } catch {
+            reject(new Error(`Invalid download URL: ${url}`));
+            return;
+        }
+
+        if (parsedUrl.protocol !== 'https:') {
+            reject(new Error(`Blocked non-HTTPS download URL: ${url}`));
+            return;
+        }
+
+        if (!isAllowedHost(parsedUrl.hostname)) {
+            reject(new Error(`Blocked download host: ${parsedUrl.hostname}`));
+            return;
+        }
+
+        const tempPath = `${destPath}.tmp-${process.pid}-${Date.now()}`;
+        const request = https.get(url, { timeout: DOWNLOAD_TIMEOUT_MS }, (response) => {
             // Handle redirects
             if (response.statusCode === 301 || response.statusCode === 302) {
-                return downloadFile(response.headers.location!, destPath)
+                if (redirectCount >= MAX_REDIRECTS) {
+                    reject(new Error(`Too many redirects while downloading ${url}`));
+                    return;
+                }
+
+                const redirectLocation = response.headers.location;
+                if (!redirectLocation) {
+                    reject(new Error(`Redirect response missing location header: ${url}`));
+                    return;
+                }
+
+                const redirectUrl = new URL(redirectLocation, url).toString();
+                return downloadFile(redirectUrl, destPath, redirectCount + 1)
                     .then(resolve)
                     .catch(reject);
             }
             
             if (response.statusCode !== 200) {
+                response.resume();
                 reject(new Error(`Failed to download: ${response.statusCode} ${response.statusMessage}`));
                 return;
             }
 
-            const file = fs.createWriteStream(destPath);
+            const file = fs.createWriteStream(tempPath);
             response.pipe(file);
 
             file.on('finish', () => {
-                file.close();
-                resolve();
+                file.close((closeError) => {
+                    if (closeError) {
+                        fs.unlink(tempPath, () => {});
+                        reject(closeError);
+                        return;
+                    }
+
+                    try {
+                        fs.renameSync(tempPath, destPath);
+                        resolve();
+                    } catch (renameError) {
+                        fs.unlink(tempPath, () => {});
+                        reject(renameError);
+                    }
+                });
             });
 
             file.on('error', (err) => {
-                fs.unlink(destPath, () => {});
+                fs.unlink(tempPath, () => {});
                 reject(err);
             });
-        }).on('error', reject);
+
+            response.on('error', (err) => {
+                fs.unlink(tempPath, () => {});
+                reject(err);
+            });
+        });
+
+        request.on('timeout', () => {
+            request.destroy(new Error(`Download timed out after ${DOWNLOAD_TIMEOUT_MS}ms: ${url}`));
+        });
+
+        request.on('error', (err) => {
+            fs.unlink(tempPath, () => {});
+            reject(err);
+        });
+    });
+}
+
+function isValidIpv4Address(value: string): boolean {
+    const parts = value.split('.');
+    if (parts.length !== 4) {
+        return false;
+    }
+
+    return parts.every((part) => {
+        if (!/^\d+$/.test(part)) {
+            return false;
+        }
+
+        const octet = Number(part);
+        return octet >= 0 && octet <= 255;
     });
 }
 
 async function initializeCache(context: vscode.ExtensionContext): Promise<void> {
     const isWindows = process.platform === 'win32';
     const pythonCmd = isWindows ? 'python' : 'python3';
-    const homeDir = require('os').homedir();
-    const cacheDir = path.join(homeDir, '.cache', 'mcp-kali-workspace');
+    const cacheDir = getCacheDir();
     const venvDir = path.join(cacheDir, 'venv');
     const venvBinDir = isWindows ? path.join(venvDir, 'Scripts') : path.join(venvDir, 'bin');
 
@@ -125,6 +216,32 @@ async function initializeCache(context: vscode.ExtensionContext): Promise<void> 
     console.log('Cache initialization completed successfully');
 }
 
+async function clearCacheDirectory(): Promise<void> {
+    const cacheDir = getCacheDir();
+
+    if (!fs.existsSync(cacheDir)) {
+        vscode.window.showInformationMessage('No MCP Kali cache directory found.');
+        return;
+    }
+
+    const confirm = await vscode.window.showWarningMessage(
+        'Remove the shared MCP Kali cache directory? The Python environment will be recreated on next setup.',
+        'Remove Cache',
+        'Cancel'
+    );
+
+    if (confirm !== 'Remove Cache') {
+        return;
+    }
+
+    try {
+        fs.rmSync(cacheDir, { recursive: true, force: true });
+        vscode.window.showInformationMessage('MCP Kali cache removed successfully.');
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to remove MCP Kali cache: ${error}`);
+    }
+}
+
 async function setupWorkspace(context: vscode.ExtensionContext) {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     
@@ -138,7 +255,7 @@ async function setupWorkspace(context: vscode.ExtensionContext) {
         prompt: 'Enter Kali VM IP address',
         placeHolder: '192.168.110.23',
         validateInput: (value) => {
-            if (!value || !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value)) {
+            if (!value || !isValidIpv4Address(value)) {
                 return 'Please enter a valid IP address';
             }
             return null;
@@ -360,16 +477,5 @@ async function removeWorkspace() {
 }
 
 export function deactivate() {
-    // Clean up cache on extension uninstall/disable (synchronous to ensure completion)
-    try {
-        const homeDir = require('os').homedir();
-        const cacheDir = path.join(homeDir, '.cache', 'mcp-kali-workspace');
-        
-        if (fs.existsSync(cacheDir)) {
-            fs.rmSync(cacheDir, { recursive: true, force: true });
-            console.log('MCP Kali cache cleaned up successfully');
-        }
-    } catch (error) {
-        console.error('Failed to clean up MCP Kali cache:', error);
-    }
+    // Keep shared cache intact on deactivate to avoid unexpected re-initialization.
 }

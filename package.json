@@ -41,6 +41,10 @@
       {
         "command": "mcp-kali.remove",
         "title": "MCP Kali: Remove Workspace Configuration"
+      },
+      {
+        "command": "mcp-kali.clearCache",
+        "title": "MCP Kali: Clear Shared Cache"
       }
     ]
   },
@@ -49,7 +53,8 @@
     "vscode:prepublish": "npm run download-resources && npm run compile",
     "compile": "node node_modules/typescript/bin/tsc -p ./",
     "watch": "node node_modules/typescript/bin/tsc -watch -p ./",
-    "package": "npm run download-resources && node node_modules/@vscode/vsce/vsce package"
+    "package": "npm run download-resources && node node_modules/@vscode/vsce/vsce package",
+    "verify:local": "npm run download-resources && npm run compile && npm run package"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -28,7 +28,7 @@
 5. **Install the extension:**
 
    ```bash
-   code --install-extension mcp-kali-workspace-0.1.0.vsix
+   code --install-extension mcp-kali-workspace-0.5.3.vsix
    ```
 
 ## Next Steps
@@ -36,6 +36,6 @@
 After installation, in any workspace:
 
 1. Run command: `MCP Kali: Setup Workspace`
-2. Follow prompts for Kali IP, SSH user, SSH key
+2. Follow prompt for Kali VM IP address
 3. Reload VS Code
 4. Use MCP tools in Copilot Chat!
