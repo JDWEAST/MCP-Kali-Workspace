@@ -1,44 +1,57 @@
 {
-	"servers": {
-		"microsoft/markitdown": {
-			"type": "stdio",
-			"command": "uvx",
-			"args": [
-				"markitdown-mcp@0.0.1a4"
-			]
-		},
-		"io.github.github/github-mcp-server": {
-			"type": "stdio",
-			"command": "docker",
-			"args": [
-				"run",
-				"-i",
-				"--rm",
-				"-p",
-				"127.0.0.1:8085:8085",
-				"-e",
-				"GITHUB_OAUTH_CALLBACK_PORT=8085",
-				"-e",
-				"GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
-				"ghcr.io/github/github-mcp-server:1.7.0"
-			]
-		},
-		"io.github.wonderwhy-er/desktop-commander": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"--registry",
-				"https://registry.npmjs.org",
-				"@wonderwhy-er/desktop-commander@0.2.44"
-			]
-		}
-	},
-	"inputs": [
-		{
-			"id": "token",
-			"type": "promptString",
-			"description": "",
-			"password": true
-		}
-	]
+  "servers": {
+    "microsoft/markitdown": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "markitdown-mcp@0.0.1a4"
+      ]
+    },
+    "io.github.github/github-mcp-server": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-p",
+        "127.0.0.1:8085:8085",
+        "-e",
+        "GITHUB_OAUTH_CALLBACK_PORT=8085",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
+        "ghcr.io/github/github-mcp-server:1.7.0"
+      ]
+    },
+    "io.github.wonderwhy-er/desktop-commander": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--registry",
+        "https://registry.npmjs.org",
+        "@wonderwhy-er/desktop-commander@0.2.44"
+      ]
+    },
+    "kaliMcp": {
+      "type": "stdio",
+      "command": "c:\\Users\\yeahi\\copilot-worktrees\\mcp-kali-workspace\\jdweast-miniature-engine\\.mcp-kali\\mcp-wrapper.cmd",
+      "args": [
+        "--server",
+        "http://172.27.120.100:5000"
+      ]
+    },
+    "authorizedPassiveOsint": {
+      "type": "stdio",
+      "command": "c:\\Users\\yeahi\\copilot-worktrees\\mcp-kali-workspace\\jdweast-miniature-engine\\resources\\osint-mcp-wrapper.cmd",
+      "args": []
+    }
+  },
+  "inputs": [
+    {
+      "id": "token",
+      "type": "promptString",
+      "description": "",
+      "password": true
+    }
+  ]
 }
