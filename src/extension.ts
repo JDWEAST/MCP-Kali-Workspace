@@ -227,20 +227,39 @@ exec "${path.join(venvBinDir, 'python3')}" "${mcpServerPath}" "$@"
                 fs.mkdirSync(vscodeDir, { recursive: true });
             }
 
-            const mcpConfig = {
-                servers: {
-                    kaliMcp: {
-                        type: 'stdio',
-                        command: wrapperPath,
-                        args: [
-                            '--server',
-                            `http://${kaliIp}:5000`
-                        ]
-                    }
+            const mcpJsonPath = path.join(vscodeDir, 'mcp.json');
+            let mcpConfig: any = {};
+
+            if (fs.existsSync(mcpJsonPath)) {
+                const existingConfigRaw = fs.readFileSync(mcpJsonPath, 'utf8');
+                try {
+                    mcpConfig = JSON.parse(existingConfigRaw);
+                } catch {
+                    throw new Error('Existing .vscode/mcp.json contains invalid JSON. Fix the file and run setup again.');
                 }
+
+                if (typeof mcpConfig !== 'object' || mcpConfig === null || Array.isArray(mcpConfig)) {
+                    throw new Error('Existing .vscode/mcp.json must be a JSON object.');
+                }
+            }
+
+            if (!mcpConfig.servers) {
+                mcpConfig.servers = {};
+            }
+
+            if (typeof mcpConfig.servers !== 'object' || mcpConfig.servers === null || Array.isArray(mcpConfig.servers)) {
+                throw new Error('The "servers" field in .vscode/mcp.json must be a JSON object.');
+            }
+
+            mcpConfig.servers.kaliMcp = {
+                type: 'stdio',
+                command: wrapperPath,
+                args: [
+                    '--server',
+                    `http://${kaliIp}:5000`
+                ]
             };
 
-            const mcpJsonPath = path.join(vscodeDir, 'mcp.json');
             fs.writeFileSync(mcpJsonPath, JSON.stringify(mcpConfig, null, 2));
 
             // Update settings.json (only if settings are available)
