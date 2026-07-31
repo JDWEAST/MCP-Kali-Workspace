@@ -172,7 +172,35 @@ Run nikto against <https://example.com> and analyze the results
 curl http://localhost:5000/health
 ```
 
-Should return: `{"status":"healthy"}`
+Should return something like:
+
+```json
+{
+  "all_essential_tools_available": true,
+  "message": "Kali Linux Tools API Server is running",
+  "status": "healthy",
+  "tools_status": {
+    "dirb": true,
+    "gobuster": true,
+    "nikto": true,
+    "nmap": true
+  }
+}
+```
+
+**If `all_essential_tools_available` is `false`**, the required security tools
+are not installed or not in your PATH. Install them on your Kali VM:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y nmap nikto gobuster dirb
+```
+
+Then restart the `kali-server-mcp` service and verify all tools show `true`:
+
+```bash
+curl http://localhost:5000/health
+```
 
 **Check VS Code Output:**
 
