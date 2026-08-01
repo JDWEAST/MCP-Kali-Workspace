@@ -39,20 +39,10 @@
 				"next-devtools-mcp@0.3.6"
 			]
 		},
-		"com.apify/apify-mcp-server": {
-			"type": "http",
-			"url": "https://mcp.apify.com/",
-			"headers": {
-				"Authorization": "${input:Authorization}"
-			},
-			"gallery": "https://api.mcp.github.com",
-			"version": "0.14.1"
-		},
 		"com.vercel/vercel-mcp": {
 			"type": "http",
 			"url": "https://mcp.vercel.com",
-			"gallery": "https://api.mcp.github.com",
-			"version": "0.0.3"
+			
 		},
 		"io.github.jagoff/memo": {
 			"type": "stdio",
@@ -60,8 +50,7 @@
 			"args": [
 				"mlx-memo@4.7.0"
 			],
-			"gallery": "https://api.mcp.github.com",
-			"version": "4.7.0"
+			
 		}
 	},
 	"inputs": [
