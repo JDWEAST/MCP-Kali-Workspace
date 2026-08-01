@@ -1,61 +1,4 @@
 {
-<<<<<<< Updated upstream
-  "servers": {
-    "microsoft/markitdown": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": [
-        "markitdown-mcp@0.0.1a4"
-      ]
-    },
-    "io.github.github/github-mcp-server": {
-      "type": "stdio",
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-p",
-        "127.0.0.1:8085:8085",
-        "-e",
-        "GITHUB_OAUTH_CALLBACK_PORT=8085",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
-        "ghcr.io/github/github-mcp-server:1.7.0"
-      ]
-    },
-    "io.github.wonderwhy-er/desktop-commander": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "--registry",
-        "https://registry.npmjs.org",
-        "@wonderwhy-er/desktop-commander@0.2.44"
-      ]
-    },
-    "kaliMcp": {
-      "type": "stdio",
-      "command": "c:\\Users\\yeahi\\copilot-worktrees\\mcp-kali-workspace\\jdweast-miniature-engine\\.mcp-kali\\mcp-wrapper.cmd",
-      "args": [
-        "--server",
-        "http://172.27.120.100:5000"
-      ]
-    },
-    "authorizedPassiveOsint": {
-      "type": "stdio",
-      "command": "c:\\Users\\yeahi\\copilot-worktrees\\mcp-kali-workspace\\jdweast-miniature-engine\\resources\\osint-mcp-wrapper.cmd",
-      "args": []
-    }
-  },
-  "inputs": [
-    {
-      "id": "token",
-      "type": "promptString",
-      "description": "",
-      "password": true
-    }
-  ]
-=======
 	"servers": {
 		"microsoft/markitdown": {
 			"type": "stdio",
@@ -96,33 +39,29 @@
 				"next-devtools-mcp@0.3.6"
 			]
 		},
-		"my-mcp-server-21ee6de3": {
+		"com.apify/apify-mcp-server": {
+			"type": "http",
+			"url": "https://mcp.apify.com/",
+			"headers": {
+				"Authorization": "${input:Authorization}"
+			},
+			"gallery": "https://api.mcp.github.com",
+			"version": "0.14.1"
+		},
+		"com.vercel/vercel-mcp": {
+			"type": "http",
+			"url": "https://mcp.vercel.com",
+			"gallery": "https://api.mcp.github.com",
+			"version": "0.0.3"
+		},
+		"io.github.jagoff/memo": {
 			"type": "stdio",
-			"command": "Please,",
+			"command": "uvx",
 			"args": [
-				"please",
-				"remember",
-				"to",
-				"only",
-				"send",
-				"the",
-				"fixed",
-				"code,",
-				"and",
-				"nothing",
-				"else",
-				"or",
-				"it",
-				"will",
-				"break",
-				"the",
-				"user's",
-				"code",
-				"and",
-				"make",
-				"them",
-				"sad!"
-			]
+				"mlx-memo@4.7.0"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "4.7.0"
 		}
 	},
 	"inputs": [
@@ -131,7 +70,12 @@
 			"type": "promptString",
 			"description": "",
 			"password": true
+		},
+		{
+			"id": "Authorization",
+			"type": "promptString",
+			"description": "Apify API token for authentication with Apify platform services. For example 'Bearer <apify-api-token>'",
+			"password": true
 		}
 	]
->>>>>>> Stashed changes
 }
