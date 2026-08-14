@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { execSync } from 'child_process';
 import * as https from 'https';
 
@@ -9,8 +10,12 @@ const MAX_REDIRECTS = 5;
 const ALLOWED_DOWNLOAD_HOSTS = ['gitlab.com', 'www.gitlab.com'];
 
 function getCacheDir(): string {
-    const homeDir = require('os').homedir();
+    const homeDir = os.homedir();
     return path.join(homeDir, '.cache', 'mcp-kali-workspace');
+}
+
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -20,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
     initializeCache(context).catch(error => {
         console.error('Failed to initialize cache during activation:', error);
         vscode.window.showWarningMessage(
-            `MCP Kali: Cache initialization failed. You may need to install Python. Error: ${error.message}`
+            `MCP Kali: Cache initialization failed. You may need to install Python. Error: ${getErrorMessage(error)}`
         );
     });
 
@@ -87,7 +92,7 @@ function downloadFile(url: string, destPath: string, redirectCount = 0): Promise
         }
 
         const tempPath = `${destPath}.tmp-${process.pid}-${Date.now()}`;
-        const request = https.get(url, { timeout: DOWNLOAD_TIMEOUT_MS }, (response) => {
+        const request = https.get(url, { timeout: DOWNLOAD_TIMEOUT_MS }, (response: import('http').IncomingMessage) => {
             // Handle redirects
             if (response.statusCode === 301 || response.statusCode === 302) {
                 if (redirectCount >= MAX_REDIRECTS) {
@@ -117,7 +122,7 @@ function downloadFile(url: string, destPath: string, redirectCount = 0): Promise
             response.pipe(file);
 
             file.on('finish', () => {
-                file.close((closeError) => {
+                file.close((closeError?: NodeJS.ErrnoException | null) => {
                     if (closeError) {
                         fs.unlink(tempPath, () => {});
                         reject(closeError);
@@ -134,12 +139,12 @@ function downloadFile(url: string, destPath: string, redirectCount = 0): Promise
                 });
             });
 
-            file.on('error', (err) => {
+            file.on('error', (err: Error) => {
                 fs.unlink(tempPath, () => {});
                 reject(err);
             });
 
-            response.on('error', (err) => {
+            response.on('error', (err: Error) => {
                 fs.unlink(tempPath, () => {});
                 reject(err);
             });
@@ -149,7 +154,7 @@ function downloadFile(url: string, destPath: string, redirectCount = 0): Promise
             request.destroy(new Error(`Download timed out after ${DOWNLOAD_TIMEOUT_MS}ms: ${url}`));
         });
 
-        request.on('error', (err) => {
+        request.on('error', (err: Error) => {
             fs.unlink(tempPath, () => {});
             reject(err);
         });
@@ -287,7 +292,7 @@ async function setupWorkspace(context: vscode.ExtensionContext) {
             } catch (error) {
                 console.warn('Failed to download latest resources, using bundled version:', error);
                 vscode.window.showWarningMessage(
-                    'Could not download latest MCP server files (offline or network issue). Using bundled version.',
+                    `Could not download latest MCP server files (offline or network issue). Using bundled version. ${getErrorMessage(error)}`,
                     'OK'
                 );
             }
@@ -310,7 +315,7 @@ async function setupWorkspace(context: vscode.ExtensionContext) {
             
             // Get paths to cached venv
             const isWindows = process.platform === 'win32';
-            const homeDir = require('os').homedir();
+            const homeDir = os.homedir();
             const cacheDir = path.join(homeDir, '.cache', 'mcp-kali-workspace');
             const venvDir = path.join(cacheDir, 'venv');
             const venvBinDir = isWindows ? path.join(venvDir, 'Scripts') : path.join(venvDir, 'bin');
@@ -407,7 +412,7 @@ exec "${path.join(venvBinDir, 'python3')}" "${mcpServerPath}" "$@"
             });
 
         } catch (error) {
-            vscode.window.showErrorMessage(`Setup failed: ${error}`);
+            vscode.window.showErrorMessage(`Setup failed: ${getErrorMessage(error)}`);
         }
     });
 }
@@ -472,7 +477,7 @@ async function removeWorkspace() {
         });
 
     } catch (error) {
-        vscode.window.showErrorMessage(`Failed to remove configuration: ${error}`);
+        vscode.window.showErrorMessage(`Failed to remove configuration: ${getErrorMessage(error)}`);
     }
 }
 

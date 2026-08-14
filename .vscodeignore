@@ -1,0 +1,12 @@
+**/*.ts
+**/*.map
+**/node_modules/**
+**/.git/**
+**/.vscode/**
+**/.mcp-kali/**
+**/scripts/**
+**/src/**
+**/tsconfig.json
+**/*.log
+**/*.vsix
+**/.gitignore
