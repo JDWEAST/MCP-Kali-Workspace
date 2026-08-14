@@ -41,11 +41,19 @@ while using MCP Kali Workspace for penetration testing insights.
 ### On Your Kali VM
 
 - Kali Linux with `kali-server-mcp` installed
-- `kali-server-mcp` running on port 5000:
+- `kali-server-mcp` running on port 5000
+
+For a safer default, bind the service only to a trusted interface or localhost and use SSH tunneling if you need remote access:
 
 ```bash
-kali-server-mcp --ip 0.0.0.0 --port 5000
+# Recommended for local-only use
+kali-server-mcp --ip 127.0.0.1 --port 5000
+
+# Or bind to your VM's private interface only
+# kali-server-mcp --ip 192.168.110.10 --port 5000
 ```
+
+> Warning: Avoid binding to `0.0.0.0` unless you are certain the host is behind a firewall and only trusted networks can reach it.
 
 ### On Your Development Machine
 
